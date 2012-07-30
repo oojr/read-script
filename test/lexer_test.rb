@@ -48,6 +48,27 @@ CODE
     assert_equal tokens, Lexer.new.tokenize(code)
   end
   
+  def test_display
+    code = <<-CODE
+if prediction:
+  display "something"
+  select empty:
+    variables
+start program     
+CODE
+    tokens =[
+      [:IF, "if"], [:IDENTIFIER, "prediction"],
+      [:INDENT, 2],
+        [:DISPLAY, "display"], [:STRING, "something"], [:NEWLINE, "\n"],
+        [:SELECT, "select"], [:EMPTY, "empty"],
+        [:INDENT, 4],
+          [:VARIABLES, "variables"],
+      [:DEDENT, 0], [:DEDENT, 0], [:NEWLINE,"\n"],
+      [:START,"start"], [:IDENTIFIER, "program"]
+    ]
+    assert_equal tokens, Lexer.new.tokenize(code)
+  end
+
   ## Exercise: Modify the lexer to delimit blocks with <code>{ ... }</code> instead of indentation.
   def test_braket_lexer
     require "bracket_lexer"
@@ -76,4 +97,6 @@ CODE
     ]
     assert_equal tokens, BracketLexer.new.tokenize(code)
   end
+
+
 end

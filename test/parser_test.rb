@@ -37,6 +37,16 @@ CODE
     
     assert_equal nodes, Parser.new.parse(code)
   end
+
+  def test_variable
+    code= <<-CODE
+variable jelly: "sweet"
+
+CODE
+    nodes = Nodes.new([
+        VariableNode.new("")
+
+      ]) 
   
   def test_def_with_param
     code = <<-CODE

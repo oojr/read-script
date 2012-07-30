@@ -27,6 +27,12 @@ class NilNode < LiteralNode
   end
 end
 
+class EmptyNode < LiteralNode
+  def initialize
+    super(nil)
+  end
+end
+
 # Node of a method call or local variable access, can take any of these forms:
 # 
 #   method # this form can also be a local variable

@@ -131,6 +131,7 @@ rule
   Assign:
     IDENTIFIER "=" Expression     { result = SetLocalNode.new(val[0], val[2]) }
   | CONSTANT "=" Expression       { result = SetConstantNode.new(val[0], val[2]) }
+  
   ;
   
   # Method definition
