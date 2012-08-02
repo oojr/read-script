@@ -78,7 +78,7 @@ rule
   | ";"
   ;
   
-  # All hard-coded values
+  # All hard-coded values after empty code is taken from jscore
   Literal:
     NUMBER                        { result = NumberNode.new(val[0]) }
   | STRING                        { result = StringNode.new(val[0]) }
@@ -86,8 +86,518 @@ rule
   | FALSE                         { result = FalseNode.new }
   | NIL                           { result = NilNode.new }
   | EMPTY                         { result = EmptyNode.new}
+  | NULLTOKEN
+  | TRUETOKEN
+  | '/'
+  | DIVEQUAL
   ;
   
+
+  Property:
+    IDENT ':' AssignmentExpr
+  | STRING ':' AssignmentExpr
+  | NUMBER ':' AssignmentExpr
+  | IDENT IDENT '(' ')' OPENBRACE FunctionBody CLOSEBRACE
+  | IDENT IDENT '(' FormalParameterList ')' OPENBRACE FunctionBody CLOSEBRACE
+  | IDENTIFIER ':' AssignmentExpr
+  | IDENTIFIER IDENTIFIER '(' ')' INDENT FunctionBody DEDENT 
+  | IDENTIFIER IDENTIFIER '(' FormalParameterList ')' INDENT FunctionBody DEDENT 
+  ;
+  
+  PropertyList
+    Property
+  | PropertyList ',' Property
+  ;
+  
+  PrimaryExpr
+    PrimaryExprNoBrace
+  | OPENBRACE CLOSEBRACE
+  | OPENBRACE PropertyList CLOSEBRACE
+  | OPENBRACE PropertyList ',' CLOSEBRACE
+  | INDENT DEDENT
+  | INDENT PropertyList DEDENT
+  | INDENT PropertyList ',' DEDENT
+  | 
+  ;
+
+  # Primary Expression with no indents
+  PrimaryExprNoBrace
+    THISTOKEN
+  | Literal
+  | ArrayLiteral
+  | IDENT
+  | '(' Expr ')'
+  | IDENTIFIER
+  | '(' Expression ')'
+  ; 
+  
+  # Arrays 
+  ArrayLiteral
+    '[' ElisionOpt ']'
+  | '[' ElementList ']'
+  | '[' ElementList ',' ElisionOpt ']'
+  ;
+
+  ElementList
+    ElisionOpt AssignmentExpr
+  | ElementList ',' ElisionOpt AssignmentExpr
+  ;
+
+  ElisionOpt
+  
+  | Elision
+  ;
+
+  Elision
+    ','
+  | Elision ','
+  ;
+
+  MemberExpr
+    PrimaryExpr
+  | FunctionExpr
+  | MemberExpr '[' Expr ']'
+  | MemberExpr '.' IDENT
+  | NEW MemberExpr Arguments
+  | MemberExpr '[' Expression ']'
+  | MemberExpr '.' IDENTIFIER
+  ;
+
+  # What is no BF
+
+  MemberExprNoBF
+    PrimaryExprNoBrace
+  | MemberExprNoBF '[' Expr ']'
+  | MemberExprNoBF '.' IDENT
+  | NEW MemberExpr Arguments
+  | MemberExprNoBF '[' Expression ']'
+  | MemberExprNoBF '.' IDENTIFER
+  ;
+
+  NewExpr
+    MemberExpr
+  | NEW NewExpr
+  ;
+
+  NewExprNoBF
+    MemberExprNoBF
+  | NEW NewExpr
+    ;
+
+  CallExpr
+    MemberExpr Arguments
+  | CallExpr Arguments
+  | CallExpr '[' Expr ']'
+  | CallExpr '.' IDENT
+  | CallExpr '[' Expression ']'
+  | CallExpr '.' IDENTIFIER
+  ;
+
+  CallExprNoBF
+    MemberExprNoBF Arguments
+  | CallExprNoBF Arguments
+  | CallExprNoBF '[' Expr ']'
+  | CallExprNoBF '.' IDENT
+  | CallExprNoBF '[' IDENTIFIER ']'
+  ;
+
+  Arguments
+    '(' ')'
+  | '(' ArgumentList ')'
+  ;
+
+  ArgumentList
+    AssignmentExpr
+  | ArgumentList ',' AssignmentExpr
+  ;
+
+  LeftHandSideExpr
+    NewExpr
+  | CallExpr
+  ;
+
+  LeftHandSideExprNoBF
+    NewExprNoBF
+  | CallExprNoBF
+  ;
+
+  PostfixExpr
+    LeftHandSideExpr
+  | LeftHandSideExpr PLUSPLUS
+  | LeftHandSideExpr MINUSMINUS
+  | LeftHandSideExpr '++'
+  | LeftHandSideExpr '--'
+  ;
+
+  PostfixExprNoBF
+    LeftHandSideExprNoBF
+  | LeftHandSideExprNoBF PLUSPLUS
+  | LeftHandSideExprNoBF MINUSMINUS
+  | LeftHandSideExprNoBF '++'
+  | LeftHandSideExprNoBF '--'
+  ;
+
+  UnaryExprCommon
+    DELETETOKEN UnaryExpr
+  | VOIDTOKEN UnaryExpr
+  | TYPEOF UnaryExpr
+  | PLUSPLUS UnaryExpr
+  | AUTOPLUSPLUS UnaryExpr
+  | MINUSMINUS UnaryExpr
+  | AUTOMINUSMINUS UnaryExpr
+  | '+' UnaryExpr
+  | '-' UnaryExpr
+  | '~' UnaryExpr
+  | '!' UnaryExpr
+  | '++' Unary Expr
+  | '--' Unary Expr
+  ;
+
+  UnaryExpr
+    PostfixExpr
+  | UnaryExprCommon
+  ;
+
+  UnaryExprNoBF
+    PostfixExprNoBF
+  | UnaryExprCommon
+  ;
+
+  MultiplicativeExpr
+    UnaryExpr
+  | MultiplicativeExpr '*' UnaryExpr
+  | MultiplicativeExpr '/' UnaryExpr
+  | MultiplicativeExpr '%' UnaryExpr
+  ;
+
+  MultiplicativeExprNoBF
+    UnaryExprNoBF
+  | MultiplicativeExprNoBF '*' UnaryExpr
+  | MultiplicativeExprNoBF '/' UnaryExpr
+  | MultiplicativeExprNoBF '%' UnaryExpr
+  ;
+
+  AdditiveExpr
+    MultiplicativeExpr
+  | AdditiveExpr '+' MultiplicativeExpr
+  | AdditiveExpr '-' MultiplicativeExpr
+  ;
+
+  AdditiveExprNoBF
+    MultiplicativeExprNoBF
+  | AdditiveExprNoBF '+' MultiplicativeExpr
+  | AdditiveExprNoBF '-' MultiplicativeExpr
+  ;
+  
+  ShiftExpr
+    AdditiveExpr
+  | ShiftExpr LSHIFT AdditiveExpr
+  | ShiftExpr RSHIFT AdditiveExpr
+  | ShiftExpr URSHIFT AdditiveExpr
+  ;
+
+  ShiftExprNoBF
+    AdditiveExprNoBF
+  | ShiftExprNoBF LSHIFT AdditiveExpr
+  | ShiftExprNoBF RSHIFT AdditiveExpr
+  | ShiftExprNoBF URSHIFT AdditiveExpr
+  ;
+
+  RelationalExpr
+    ShiftExpr
+  | RelationalExpr '<' ShiftExpr
+  | RelationalExpr '>' ShiftExpr
+  | RelationalExpr LE ShiftExpr
+  | RelationalExpr GE ShiftExpr
+  | RelationalExpr INSTANCEOF ShiftExpr
+  | RelationalExpr INTOKEN ShiftExpr
+  ;
+  
+  RelationalExprNoIn
+    ShiftExpr
+  | RelationalExprNoIn '<' ShiftExpr
+  | RelationalExprNoIn '>' ShiftExpr
+  | RelationalExprNoIn LE ShiftExpr
+  | RelationalExprNoIn GE ShiftExpr
+  | RelationalExprNoIn INSTANCEOF ShiftExpr
+  ;
+
+  RelationalExprNoBF
+    ShiftExprNoBF
+  | RelationalExprNoBF '<' ShiftExpr
+  | RelationalExprNoBF '>' ShiftExpr
+  | RelationalExprNoBF LE ShiftExpr
+  | RelationalExprNoBF GE ShiftExpr
+  | RelationalExprNoBF INSTANCEOF ShiftExpr
+  | RelationalExprNoBF INTOKEN ShiftExpr
+  ;
+
+  EqualityExpr
+    RelationalExpr
+  | EqualityExpr EQEQ RelationalExpr
+  | EqualityExpr NE RelationalExpr
+  | EqualityExpr STREQ RelationalExpr
+  | EqualityExpr STRNEQ RelationalExpr
+  ;
+  
+  EqualityExprNoIn
+    RelationalExprNoIn
+  | EqualityExprNoIn EQEQ RelationalExprNoIn
+  | EqualityExprNoIn NE RelationalExprNoIn
+  | EqualityExprNoIn STREQ RelationalExprNoIn
+  | EqualityExprNoIn STRNEQ RelationalExprNoIn
+  ;
+
+  EqualityExprNoBF
+    RelationalExprNoBF
+  | EqualityExprNoBF EQEQ RelationalExpr
+  | EqualityExprNoBF NE RelationalExpr
+  | EqualityExprNoBF STREQ RelationalExpr
+  | EqualityExprNoBF STRNEQ RelationalExpr
+  ;
+
+  BitwiseANDExpr
+    EqualityExpr
+  | BitwiseANDExpr '&' EqualityExpr
+  ;
+
+  BitwiseANDExprNoIn
+    EqualityExprNoIn
+  | BitwiseANDExprNoIn '&' EqualityExprNoIn
+  ;
+
+  BitwiseANDExprNoBF
+    EqualityExprNoBF
+  | BitwiseANDExprNoBF '&' EqualityExpr
+  ;
+
+  BitwiseXORExpr
+    BitwiseANDExpr
+  | BitwiseXORExpr '^' BitwiseANDExpr
+  ;
+
+  BitwiseXORExprNoIn
+    BitwiseANDExprNoIn
+  | BitwiseXORExprNoIn '^' BitwiseANDExprNoIn
+  ;
+
+  BitwiseXORExprNoBF
+    BitwiseANDExprNoBF
+  | BitwiseXORExprNoBF '^' BitwiseANDExpr
+  ;
+
+  BitwiseORExpr
+    BitwiseXORExpr
+  | BitwiseORExpr '|' BitwiseXORExpr
+  ;
+
+  BitwiseORExprNoIn
+    BitwiseXORExprNoIn
+  | BitwiseORExprNoIn '|' BitwiseXORExprNoIn
+  ;
+
+  BitwiseORExprNoBF
+    BitwiseXORExprNoBF
+  | BitwiseORExprNoBF '|' BitwiseXORExpr
+  ;
+
+  LogicalANDExpr
+    BitwiseORExpr
+  | LogicalANDExpr AND BitwiseORExpr
+  ;
+
+  LogicalANDExprNoIn
+    BitwiseORExprNoIn
+  | LogicalANDExprNoIn AND BitwiseORExprNoIn
+  ;
+
+  LogicalANDExprNoBF
+    BitwiseORExprNoBF
+  | LogicalANDExprNoBF AND BitwiseORExpr
+  ;
+
+  LogicalORExpr
+    LogicalANDExpr
+  | LogicalORExpr OR LogicalANDExpr
+  ;
+
+  LogicalORExprNoIn
+    LogicalANDExprNoIn
+  | LogicalORExprNoIn OR LogicalANDExprNoIn
+  ;
+
+  LogicalORExprNoBF
+    LogicalANDExprNoBF
+  | LogicalORExprNoBF OR LogicalANDExpr
+  ;
+
+  ConditionalExpr
+    LogicalORExpr
+  | LogicalORExpr '?' AssignmentExpr ':' AssignmentExpr
+  ;
+
+  ConditionalExprNoIn
+    LogicalORExprNoIn
+  | LogicalORExprNoIn '?' AssignmentExprNoIn ':' AssignmentExprNoIn
+  ;
+
+
+  ConditionalExprNoBF 
+    LogicalORExprNoBF
+  | LogicalORExprNoBF '?' AssignmentExpr ':' AssignmentExpr
+  ;
+
+  AssignmentExpr
+    ConditionalExpr
+  | LeftHandSideExpr AssignmentOperator AssignmentExpr
+  ;
+
+  AssignmentExprNoIn
+    ConditionalExprNoIn
+  | LeftHandSideExpr AssignmentOperator AssignmentExprNoIn
+  ;
+
+  AssignmentExprNoBF
+    ConditionalExprNoBF
+  | LeftHandSideExprNoBF AssignmentOperator AssignmentExpr
+  ;
+  
+  AssignmentOperator
+   '='
+  | PLUSEQUAL
+  | MINUSEQUAL
+  | MULTEQUAL
+  | DIVEQUAL
+  | LSHIFTEQUAL
+  | RSHIFTEQUAL
+  | URSHIFTEQUAL
+  | ANDEQUAL
+  | XOREQUAL
+  | OREQUAL
+  | MODEQUAL
+  | '+='
+  | '-='
+  | '*='
+  | '/='
+  ;
+
+  Expr
+    AssignmentExpr
+  | Expr ',' AssignmentExpr
+  ;
+
+  ExprNoIn
+    AssignmentExprNoIn
+  | ExprNoIn ',' AssignmentExprNoIn
+  ;
+
+  ExprNoBF
+    AssignmentExprNoBF
+  | ExprNoBF ',' AssignmentExpr
+  ;
+
+  Statement
+    Block
+  | VariableStatement
+  | ConstStatement
+  | FunctionDeclaration
+  | EmptyStatement
+  | ExprStatement
+  | IfStatement
+  | IterationStatement
+  | ContinueStatement
+  | BreakStatement
+  | ReturnStatement
+  | WithStatement
+  | SwitchStatement
+  | LabelledStatement
+  | ThrowStatement
+  | TryStatement
+  | DebuggerStatement
+  ;
+
+
+  Block
+    OPENBRACE CLOSEBRACE
+  | OPENBRACE SourceElements CLOSEBRACE
+  | INDENT DEDENT
+  | INDENT SourceElements DEDENT
+  ;
+
+
+  VariableStatement
+    VAR VariableDeclarationList ';'
+  | VAR VariableDeclarationList error
+  | VARIABLE IDENTIFIER ':'
+  | VARIABLES VariableDeclarationList ':'
+  | VARIABLE IDENTIFIER error
+  | VARIABLES VariableDeclaration List error
+  ;
+
+  VariableDeclarationList
+  : IDENT
+  | IDENT Initializer
+  | VariableDeclarationList ',' IDENT
+  | VariableDeclarationList ',' IDENT Initializer
+  | IDENTIFIER
+  | IDENTIFIER Initializer
+  | VariableDeclarationList ',' IDENTIFIER
+  | VariableDeclarationList ',' IDENTIFIER Initializer
+  ;
+
+  VariableDeclarationListNoIn
+  : IDENT
+  | IDENT InitializerNoIn
+  | VariableDeclarationListNoIn ',' IDENT
+  | VariableDeclarationListNoIn ',' IDENT InitializerNoIn
+  | IDENTIFIER
+  | IDENTIFIER InitializerNoIn
+  | VariableDeclarationListNoIn ',' IDENTIFIER
+  | VariableDelarationListNoIn ',' IDENTIFIER InitializerNoIn
+  ;
+
+  ConstStatement
+    CONSTTOKEN ConstDeclarationList ';'
+  | CONSTTOKEN ConstDeclarationList error
+  | CONSTANT ConstDeclarationList ':'
+  | CONSTANT ConstDeclarationList error
+  ;
+
+  ConstDeclarationList
+    ConstDeclaration
+  | ConstDeclarationList ',' ConstDeclaration
+  ;
+
+  ConstDeclaration
+    IDENT
+  | IDENT Initializer
+  | IDENTIFIER 
+  | IDENTIFIER Initializer
+  ;
+
+  Initializer
+    '=' AssignmentExpr
+  ;
+
+  InitializerNoIn
+    '=' AssignmentExprNoIn
+  ;
+
+  EmptyStatement
+    ';'
+  ;
+
+  ExprStatement
+    ExprNoBF ';'
+  | ExprNoBF error
+  ;
+
+  IfStatement
+    IF '(' Expr ')' Statement %prec IF_WITHOUT_ELSE
+  | IF '(' Expr ')' Statement ELSE Statement
+  ;
+
+
   # A method call
   Call:
     # method
